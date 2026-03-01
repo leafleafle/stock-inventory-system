@@ -1,0 +1,2 @@
+NextAvailableId - Product, Stock
+4;4
