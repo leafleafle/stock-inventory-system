@@ -1,5 +1,6 @@
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 
 public class Stock {
     private int stockId;
@@ -21,7 +22,7 @@ public class Stock {
     }
 
     public String toMenuOption(){
-        return stockId + " | " + product.brand + " | " + product.model + " | " + engineNumber + " | " + entryDateTime + " | " + purchaseDateTime;
+        return stockId + " | " + product.brand + " | " + product.model + " | " + engineNumber + " | " + getMenuEntryDateTime() + " | " + getMenuPurchaseDateTime();
     }
 
     public Product getProduct(){
@@ -32,6 +33,10 @@ public class Stock {
         product = newProduct;
     }
 
+    public int getStockId(){
+        return stockId;
+    }
+
     public String getEngineNumber(){
         return engineNumber;
     }
@@ -40,19 +45,35 @@ public class Stock {
         engineNumber = newEngineNumber;
     }
     
-    public LocalDateTime getEntryDateTime(){
-        return entryDateTime;
-    }
     
     public LocalDate getEntryDate(){
-        return entryDateTime.toLocalDate();
+        return entryDateTime == null ? null : entryDateTime.toLocalDate();
     }
     
     public LocalDate getPurchaseDate(){
-        return purchaseDateTime.toLocalDate();
+        return purchaseDateTime == null ? null : purchaseDateTime.toLocalDate();
+    }
+
+    public LocalDateTime getEntryDateTime(){
+        return entryDateTime == null ? null : entryDateTime;
     }
     
+    public LocalDateTime getPurchaseDateTime(){
+        return purchaseDateTime == null ? null : purchaseDateTime;
+    }
     
+    public void setPurchaseDateTime(LocalDateTime newPurchaseDateTime){
+        purchaseDateTime = newPurchaseDateTime;
+    }
+
+    public String getMenuEntryDateTime(){
+        return entryDateTime == null ? "null" : entryDateTime.toLocalDate() + " " + entryDateTime.toLocalTime().truncatedTo(ChronoUnit.SECONDS);
+    }
+    
+    public String getMenuPurchaseDateTime(){
+        return purchaseDateTime == null ? "null" : purchaseDateTime.toLocalDate() + " " + purchaseDateTime.toLocalTime().truncatedTo(ChronoUnit.SECONDS);
+    }
+
     
 
 }
