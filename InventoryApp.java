@@ -1,215 +1,8 @@
 import java.util.*;
 import java.io.*;
-import java.time.LocalDateTime;
+import java.time.*;
+import java.time.format.DateTimeParseException;
 
-
-class CsvParser{
-    private String stockCsvPath = "StockInventory.csv";
-    private String productCsvPath = "ProductType.csv";
-    private String configCsvPath = "config.csv";
-    private String delimiter = ";";
-
-
-    public int getNextProductId(){
-        int nextProductId = 1;
-
-        try(BufferedReader br = new BufferedReader(new FileReader(configCsvPath))){
-            br.readLine();
-            nextProductId = Integer.parseInt(br.readLine());
-            return nextProductId;
-        } catch(Exception e){
-            e.printStackTrace();
-            System.out.println("Config error, defaulting ID to 1");
-        }
-
-        return nextProductId;
-    }
-
-    public int getNextStockId(){
-        int nextStockId = 1;
-
-        try(BufferedReader br = new BufferedReader(new FileReader(configCsvPath))){
-            br.readLine();
-            br.readLine();
-            nextStockId = Integer.parseInt(br.readLine());
-            return nextStockId;
-        } catch(Exception e){
-            e.printStackTrace();
-            System.out.println("Config error, defaulting ID to 1");
-        }
-
-        return nextStockId;
-    }
-
-
-    public void saveConfig(int nextProductId, int nextStockId) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("NextAvailableId - Product (Row 2), Stock (Row 3)\n");
-        sb.append(nextProductId).append("\n");
-        sb.append(nextStockId);
-
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(configCsvPath))) {
-            bw.write(sb.toString());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    //return hashmap of product types
-    public HashMap<Integer, Product> returnProducts(){
-        HashMap<Integer, Product> productMap = new HashMap<>();
-
-        try(BufferedReader br = new BufferedReader(new FileReader(productCsvPath))){
-            String row, brand, model;
-            int productId;
-            Product newProduct;
-            String[] rowParts;
-
-            br.readLine(); //skip first line
-
-            while((row = br.readLine()) != null){
-                rowParts = row.split(delimiter);
-                productId = Integer.parseInt(rowParts[0]);
-                brand = rowParts[1];
-                model = rowParts[2];
-
-                newProduct = new Product(productId,brand,model);
-
-                productMap.put(productId, newProduct);
-            }
-
-        } catch(IOException e){
-            e.printStackTrace();
-        }
-        
-        return productMap;
-    }
-
-    //return hashmap of stocks
-    public HashMap<Integer, Stock> returnStocks(HashMap<Integer, Product> productMap){
-        HashMap<Integer, Stock> stockMap = new HashMap<>();
-
-        try(BufferedReader br = new BufferedReader(new FileReader(stockCsvPath))){
-            String row, engineNumber;
-            int stockId,productId;
-            Product product;
-            LocalDateTime entryDate, purchaseDate;
-            String[] rowParts;
-            Stock newStock;
-
-            br.readLine(); //skip first line
-
-            while((row = br.readLine()) != null){
-                rowParts = row.split(delimiter);
-                stockId = Integer.parseInt(rowParts[0]);
-                productId = Integer.parseInt(rowParts[1]);
-
-                product = productMap.get(productId);
-
-                engineNumber = rowParts[2];
-                entryDate = LocalDateTime.parse(rowParts[3]);
-                if (rowParts[4].equals("null")){
-                    purchaseDate = null;
-                } else {
-                    purchaseDate = LocalDateTime.parse(rowParts[4]);
-                }
-
-                newStock = new Stock(stockId, product, engineNumber, entryDate, purchaseDate);
-
-                stockMap.put(stockId,newStock);
-            }
-
-        } catch(IOException e){
-            e.printStackTrace();
-        }
-        
-        return stockMap;
-    }
-
-
-    public void saveProducts(HashMap<Integer, Product> productMap){
-        StringBuilder newCsvData = new StringBuilder();
-        newCsvData.append("ProductId;Brand;Model\n");
-
-        for (Product p : productMap.values()){
-            newCsvData.append(p.toCsvRow());
-        }
-
-        try(BufferedWriter bw = new BufferedWriter(new FileWriter(productCsvPath))){
-            bw.write(newCsvData.toString());
-        } catch(IOException e){
-            e.printStackTrace();
-        }
-
-    }
-
-
-    public void saveStocks(HashMap<Integer, Stock> stockMap){        
-        StringBuilder newCsvData = new StringBuilder();
-        newCsvData.append("StockId;ProductId;EngineNumber;DateTimeEntered;DateTimePurchased\n");
-
-        for (Stock s : stockMap.values()){
-            newCsvData.append(s.toCsvRow());
-        }
-
-        try(BufferedWriter bw = new BufferedWriter(new FileWriter(stockCsvPath))){
-            bw.write(newCsvData.toString());
-        } catch(IOException e){
-            e.printStackTrace();
-        }
-
-    }
-
-}
-
-
-//For each product type
-class Product{
-    int productId;
-    String brand;
-    String model;
-
-    Product(int productId, String brand, String model){
-        this.productId = productId;
-        this.brand = brand;
-        this.model = model;
-    }
-
-    public String toCsvRow(){
-        return productId + ";" + brand + ";" + model + "\n";
-    }
-
-    public String toMenuOption(){
-        return productId + " | " + brand + " | " + model;
-    }
-
-}
-
-
-class Stock{
-    private int stockId;
-    private Product product;
-    private String engineNumber;
-    private LocalDateTime entryDate;
-    private LocalDateTime purchaseDate;
-
-    Stock(int stockId, Product product, String engineNumber, LocalDateTime entryDate, LocalDateTime purchaseDate){
-        this.stockId = stockId;
-        this.product = product;
-        this.engineNumber = engineNumber;
-        this.entryDate = entryDate;
-        this.purchaseDate = purchaseDate;
-    }
-
-    public String toCsvRow(){
-        return stockId + ";" + product.productId + ";" + engineNumber + ";" + entryDate + ";" + purchaseDate + "\n";
-    }
-
-    public String toMenuOption(){
-        return stockId + " | " + product.brand + " | " + product.model + " | " + engineNumber + " | " + entryDate + " | " + purchaseDate;
-    }
-
-}
 
 
 class InventorySystem{
@@ -234,7 +27,7 @@ class InventorySystem{
     }
 
     public void addStocks(int productId, String[] engineNumbers){
-        Product product = productMap.get(productId);
+        Product product = productMap.get(productId); //hashmap for O(1) lookup of product
 
         for (String engineNumber : engineNumbers){
             int newStockId = generateStockId();
@@ -249,6 +42,18 @@ class InventorySystem{
 
         System.out.println("Successfully added " + engineNumbers.length + " stock/s to the system.");
     }
+
+
+    public ArrayList<Stock> filterStockOptions(ViewCriteria vc){
+        ArrayList<Stock> stockArray = new ArrayList<>();
+
+        for (Stock s : stockMap.values()){
+            if (vc.matches(s)) stockArray.add(s);
+        }
+
+        return stockArray;
+    }
+
 
     public HashMap<Integer, Product> getHmProducts(){
         return productMap;
@@ -267,12 +72,93 @@ class InventorySystem{
     }
 
 
+
+
+}
+
+
+//holds filters
+class ViewCriteria {
+    private String sortOrder = "entryDate";
+    private String brandFilter = "";
+    private String modelFilter = "";
+    private String engineNumberFilter = "";
+    private String entryDateFilter = "";
+    private String purchaseDateFilter = "";
+
+    //filter checks
+    public boolean matches(Stock s) {
+        boolean brandMatch = brandFilter.isEmpty() || s.getProduct().getBrand().toLowerCase().contains(brandFilter.toLowerCase());
+        boolean modelMatch = modelFilter.isEmpty() || s.getProduct().getModel().toLowerCase().contains(modelFilter.toLowerCase());
+        boolean engineMatch = engineNumberFilter.isEmpty() || s.getEngineNumber().toUpperCase().contains(engineNumberFilter.toUpperCase());
+
+        boolean entryDateMatch = entryDateFilter.isEmpty() || s.getEntryDate().toString().startsWith(entryDateFilter);
+        boolean purchaseDateMatch = purchaseDateFilter.isEmpty() || s.getPurchaseDate().toString().startsWith(purchaseDateFilter);
+
+        return brandMatch && modelMatch && engineMatch && entryDateMatch;
+    }
+
+    public void clear() {
+        //brand = ""; model = ""; entryDateTime = ""; purchaseDateTime = "";
+    }
+
+    public String getStrActiveFilters(){
+        List<String> activeList = new ArrayList<>();
+
+        if (!brandFilter.isEmpty()) activeList.add("Brand = " + brandFilter);
+        if (!modelFilter.isEmpty()) activeList.add("Model = " + modelFilter);
+        if (!engineNumberFilter.isEmpty()) activeList.add("Engine Number = " + engineNumberFilter);
+        if (!entryDateFilter.isEmpty()) activeList.add("EntryDate = " + entryDateFilter);
+        if (!purchaseDateFilter.isEmpty()) activeList.add("PurchaseDate = " + purchaseDateFilter);
+
+        if (activeList.isEmpty()) {
+            return "None";
+        } else {
+           return (String.join(", ", activeList));
+        }
+    }
+
+    public String allFilters(){
+        String b = brandFilter.isEmpty() ? "None" : brandFilter;
+        String m = modelFilter.isEmpty() ? "None" : modelFilter;
+        String en = engineNumberFilter.isEmpty() ? "None" : engineNumberFilter;
+        String e = entryDateFilter.isEmpty() ? "None" : entryDateFilter;
+        String p = purchaseDateFilter.isEmpty() ? "None" : purchaseDateFilter;
+
+        return String.format("Brand = %s, Model = %s, Engine Number = %s, Entry Date = %s, Purchase Date = %s", b, m, en, e, p);
+    }
+
+    public void setSortOrder(String newSortOrder){
+        sortOrder = newSortOrder;
+    }
+    
+    public void setBrandFilter(String newBrandFilter){
+        brandFilter = newBrandFilter;
+    }
+
+    public void setModelFilter(String newModelFilter){
+        modelFilter = newModelFilter;
+    }
+    
+    public void setEngineNumberFilter(String newEngineNumberFilter){
+        engineNumberFilter = newEngineNumberFilter;
+    }
+
+    public void setEntryDateFilter(String newEntryDateFilter){
+        entryDateFilter = newEntryDateFilter;
+    }
+    
+    public void setPurchaseDateFilter(String newPurchaseDateFilter){
+        purchaseDateFilter = newPurchaseDateFilter;
+    }
+
+
 }
 
 
 public class InventoryApp{
-    private String mainChoice;
     private InventorySystem inventorySystem = new InventorySystem();
+    private ViewCriteria viewCriteria = new ViewCriteria();
     private Scanner sc;
 
     public InventoryApp(){
@@ -285,12 +171,26 @@ public class InventoryApp{
         boolean exitApp = false;
         String mainChoice;
 
-        while(exitApp==false){
-            printMainMenu();
+        do{
+            System.out.println("\n=======================");
+            System.out.println("MotorPH Inventory System");
+            System.out.println("=======================");
+            System.out.println("MAIN MENU: What to do?");
+            System.out.println("1 - Add Stock/s");
+            System.out.println("2 - View Inventory");
+            System.out.println("3 - Configure Product Types");
+            System.out.println("0 - Exit Program");
+            System.out.println("=======================");
+            System.out.print("Enter choice: ");
             mainChoice = askChoice();
             switch (mainChoice){
                 case "1":
-                    startAddStock();
+                    startAddStocks();
+                    System.out.println("Press enter to go back to main menu.");
+                    sc.nextLine();
+                    break;
+                case "2":
+                    startViewInventory();
                     System.out.println("Press enter to go back to main menu.");
                     sc.nextLine();
                     break;
@@ -301,34 +201,38 @@ public class InventoryApp{
                     break;
                 default:
                     System.out.println("\nInvalid option, please enter only numbers 0-7");
+                    sc.nextLine();
                     break;
             }
-        }
+        }while(exitApp==false);
     }
 
-    public void startAddStock(){
+
+    public void startAddStocks(){
         String productInput;
 
-        System.out.println("\n=======================");
-        System.out.println("ADD STOCKS MENU: Which product to add stocks for?");
-        
+        //print product type options, prompt user for input, then validate input
         do {
-            printProductsOptions();
-            System.out.print("Enter product ID: ");
+            System.out.println("\n=======================");
+            printProductsOptions(); //print product types options
+            System.out.println("0 | Go Back"); //option for back
+            System.out.println("=======================");
+            System.out.println("ADD STOCKS MENU: Which product type to add stocks for? Please choose a product type ID from the options above.");
+            System.out.println("=======================");
+            System.out.print("Enter product type ID: ");
             productInput = sc.nextLine();
-            
-            if (productInput.equals("0")) return;
 
         } while (!isValidOpt(productInput, inventorySystem.getHmProducts()));
 
+        //if user wants to go back and cancel adding of stocks
         if (productInput.equals("0")){
-            return;
-        } 
+            System.out.println("Cancelled add stocks.");        
+        };
 
         Integer productId = Integer.parseInt(productInput);
-        Product product = inventorySystem.getHmProducts().get(productId);
+        Product product = inventorySystem.getHmProducts().get(productId); //O(1) hashmap lookup
         
-
+        //ask user how many stocks to add and validate input
         int quantity = 0;
         while (true) {
             System.out.println("\n=======================");
@@ -339,11 +243,15 @@ public class InventoryApp{
 
             try {
                 quantity = Integer.parseInt(quantityInput);
+                
+                //if user wants to go back
                 if (quantity == 0) {
                     System.out.println("Cancelled add stocks.");
                     return;
                 };
-                if (quantity > 0) break;
+
+                if (quantity > 0) break; //if input is valid, break from while loop
+                
                 System.out.println("\nInvalid input. Please enter a number greater than zero.");
             } catch (NumberFormatException e) {
                 System.out.println("\nInvalid input. Please enter a whole number.");
@@ -352,18 +260,255 @@ public class InventoryApp{
         }
 
         System.out.println("\n=======================");
-
+        
+        //get engine numbers of new stocks
         String[] engineNumbers = new String[quantity];
         for (int i = 0; i < quantity; i++) {
             System.out.printf("Enter Engine Number for unit %d: ", (i + 1));
             engineNumbers[i] = sc.nextLine();
         }
 
+        //add stocks to system
         inventorySystem.addStocks(productId, engineNumbers);
 
     }
 
+    public void startViewInventory(){
+        
+        String viewChoice="";
+        ArrayList<Stock> inventoryView;
 
+        while(true){
+            System.out.println("\n=======================");
+            System.out.println("INVENTORY VIEW");
+            System.out.println("=======================");
+            inventoryView = inventorySystem.filterStockOptions(viewCriteria); //get all stocks that pass filters
+            if (inventoryView.size()>0){
+                //if there is at least one or more stock/s that passes all filters, print all
+                for (Stock s : inventoryView){
+                    System.out.println(s.toMenuOption());
+                }
+            } else{
+                System.out.println("No stock records found."); //if none, inform user
+            }
+            System.out.println("=======================");
+            System.out.println("Filters:" + viewCriteria.getStrActiveFilters());
+            System.out.printf("Currently viewing %d stocks out of %d", inventoryView.size(),inventorySystem.getHmStocks().size());
+            System.out.println("\n=======================");
+            System.out.println("VIEW OPTIONS:");
+            System.out.println("1 - Update | 2 - Delete | 3 - Sort | 4 - Search/Filter | 5 - Reset View | 0 - Go Back");
+            System.out.println("=======================");
+            System.out.print("Enter choice: ");
+            viewChoice = askChoice();
+
+            switch (viewChoice){
+                case "0":
+                    return;
+                case "1":
+                    System.out.println("1!");
+                    break;
+                case "2":
+                    System.out.println("2!");
+                    break;
+                case "3":
+                    System.out.println("3!");
+                    break;
+                case "4":
+                    startFilter();
+                    break;
+                case "5":
+                    System.out.println("5!");
+                    break;
+                default:
+                    System.out.println("\nInvalid option, please enter only numbers 0-5");
+                    sc.nextLine();
+                    break;
+            }
+
+        }
+        
+    }
+
+    public void startFilter(){
+        String viewChoice = "";
+        while(true){
+            System.out.println("\n=======================");
+            System.out.println("CURRENT SEARCH FILTERS:");
+            System.out.println(viewCriteria.allFilters());
+            System.out.println("=======================");
+            System.out.println("Which filter to edit?");
+            System.out.println("1 - Brand | 2 - Model | 3 - Engine Number | 4 - Entry Date | 5 - Purchase Date | 0 - Go Back");
+            System.out.println("=======================");
+            System.out.print("Enter choice: ");
+            viewChoice = askChoice();
+
+            switch (viewChoice){
+                case "0":
+                    return;
+                case "1":
+                    startBrandFilter();
+                    break;
+                case "2":
+                    startModelFilter();
+                    break;
+                case "3":
+                    startEngineNumberFilter();
+                    break;
+                case "4":
+                    startEntryDateFilter();
+                    break;
+                case "5":
+                    startPurchaseDateFilter();
+                    break;
+                default:
+                    System.out.println("Invalid input. Please enter only numbers 0-5.");
+                    sc.nextLine();
+                    break;
+            }
+        }
+    }
+
+
+    public void startBrandFilter(){
+        String brandInput = "";
+        // get unique brands
+        Set<String> uniqueBrands = new TreeSet<>();
+        for (Stock s : inventorySystem.getObjStocks()) {
+            uniqueBrands.add(s.getProduct().getBrand());
+        }
+
+        // hashmap for easier mapping of the index the user will enter and the actual brand value to be stored in sortFilter in viewCriteria
+        // also for easier validation using isValidOpt method
+        HashMap<Integer, String> menuMap = new HashMap<>();
+        int index = 1;
+        for (String brand : uniqueBrands) {
+            menuMap.put(index++, brand);
+        }
+
+        do{
+            System.out.println("=======================");
+            System.out.println("Brand Index | Brand Name");
+            for (Map.Entry<Integer, String> entry : menuMap.entrySet()) {
+                System.out.println(entry.getKey() + " | " + entry.getValue());
+            }
+            System.out.println("0 | Go Back"); //option for back
+            System.out.println("=======================");
+            System.out.print("Enter brand index or press enter to remove filter: ");
+
+            brandInput = askChoice();
+
+            if (brandInput.equals("0")) return;
+            
+            if (!(isValidOpt(brandInput, inventorySystem.getHmProducts()))){
+                System.out.println("Invalid input. Please enter valid brand index.");
+                sc.nextLine();
+            }
+
+        } while(!brandInput.equals("") && !isValidOpt(brandInput, menuMap));
+
+        viewCriteria.setBrandFilter(menuMap.get(Integer.parseInt(brandInput)));
+    }
+
+    public void startModelFilter(){
+        String modelInput = "";
+        do{
+            
+            System.out.println("=======================");
+            printProductsOptions(); //print product types options
+            System.out.println("0 | Go Back"); //option for back
+            System.out.println("=======================");
+            System.out.println("Any previously set brand filter will be overriden to selected model's brand.");
+            System.out.print("Enter model ID or press enter to remove filter: ");
+            
+            modelInput = sc.nextLine();
+
+            if (modelInput.equals("0")) return;
+
+            if (!(isValidOpt(modelInput, inventorySystem.getHmProducts()))){
+                System.out.println("Invalid input. Please enter valid product type id.");
+                sc.nextLine();
+            }
+
+        } while (!(isValidOpt(modelInput, inventorySystem.getHmProducts()) || modelInput.equals("")));
+
+        Product model = inventorySystem.getHmProducts().get(Integer.parseInt(modelInput)); //hashmap used to be able to get brand and model easily from modelInput
+
+        if (!(modelInput.equals(""))){
+            viewCriteria.setBrandFilter(model.getBrand()); 
+        }
+
+        viewCriteria.setModelFilter(model.getModel());
+    }
+
+    public void startEngineNumberFilter(){
+        String engineNumberInput = "";
+                        
+        System.out.println("=======================");
+        System.out.print("Any other filters will be overriden.");
+        System.out.print("Enter engine number to search or press enter to remove filter: ");
+        engineNumberInput = sc.nextLine();
+
+        //override other filters since engine numbers are more specific, for easier searching of specific engine numbers
+        if (!(engineNumberInput.equals(""))){
+            viewCriteria.setBrandFilter(""); 
+            viewCriteria.setModelFilter(""); 
+            viewCriteria.setEntryDateFilter(""); 
+            viewCriteria.setPurchaseDateFilter(""); 
+        }
+
+        viewCriteria.setEngineNumberFilter(engineNumberInput);
+    }
+
+    public void startEntryDateFilter(){
+        String entryDateInput = "";
+
+        do{
+            
+            System.out.println("=======================");
+            System.out.print("Enter entry date (YYYY-MM or YYYY-MM-DD) or press enter to remove filter: ");
+            
+            entryDateInput = sc.nextLine();
+
+            if (!(isValidDate(entryDateInput))){
+                System.out.println("Invalid input. Please enter valid dates in YYYY-MM or YYYY-MM-DD format only.");
+            }
+
+        } while (!(isValidDate(entryDateInput) || entryDateInput.equals("")));
+
+        viewCriteria.setEntryDateFilter(entryDateInput);
+    }
+    
+    public void startPurchaseDateFilter(){
+        String purchaseDateInput = "";
+
+        do{
+            
+            System.out.println("=======================");
+            System.out.print("Enter purchase date (YYYY-MM or YYYY-MM-DD) or press enter to remove filter: ");
+            
+            purchaseDateInput = sc.nextLine();
+
+            if (!(isValidDate(purchaseDateInput))){
+                System.out.println("Invalid input. Please enter valid dates in YYYY-MM or YYYY-MM-DD format only.");
+            }
+
+        } while (!(isValidDate(purchaseDateInput) || purchaseDateInput.equals("")));
+
+        viewCriteria.setPurchaseDateFilter(purchaseDateInput);
+    }
+    
+    public boolean isValidDate(String strDate) {
+        if (strDate.length() == 7) {
+            strDate += "-01"; // in order to accept values in YYYY-MM format, if user wants to view all stocks entered or purchased for a whole month
+        }
+
+        try {
+            LocalDate.parse(strDate);
+            return true;
+        } catch (DateTimeParseException e) {
+            return false;
+        }
+    }
 
     public boolean isValidOpt(String strToCheck, HashMap<Integer,?> hm){
         try {
@@ -373,16 +518,22 @@ public class InventoryApp{
             return false;
         }
     }
+    
 
     public void printProductsOptions(){
-        System.out.println("=======================");
         System.out.println("Product ID | Brand | Model");
         for (Product p : inventorySystem.getObjProducts()){
             System.out.println(p.toMenuOption());
         }
-        System.out.println("0 - Go Back");
-        System.out.println("=======================");
     }
+    
+    public void printStocksOptions(){
+        System.out.println("Stock ID | Brand | Model | Engine Number | Entry Date | Purchase Date");
+        for (Stock s : inventorySystem.getObjStocks()){
+            System.out.println(s.toMenuOption());
+        }
+    }
+
 
     public String askChoice(){
         String mainChoice = sc.nextLine();
@@ -390,22 +541,6 @@ public class InventoryApp{
         return mainChoice;
     }
 
-    public void printMainMenu(){
-        System.out.println("\n=======================");
-        System.out.println("MotorPH Inventory System");
-        System.out.println("=======================");
-        System.out.println("MAIN MENU: What to do?");
-        System.out.println("1 - Add Stock/s");
-        System.out.println("2 - Update Stock/s");
-        System.out.println("3 - Delete Stock/s");
-        System.out.println("4 - Sort Inventory");
-        System.out.println("5 - Filter Inventory");
-        System.out.println("6 - Reset Inventory View");
-        System.out.println("7 - Configure Product Types");
-        System.out.println("0 - Exit Program");
-        System.out.println("=======================");
-        System.out.print("Enter input: ");
-    }
 
     public static void main(String[] args) {
         InventoryApp app = new InventoryApp();
