@@ -192,7 +192,13 @@ class ViewCriteria {
     }
 
     public void clear() {
-        //brand = ""; model = ""; entryDateTime = ""; purchaseDateTime = "";
+        sortOrder = "Entry Date";
+        sortDirection = "Descending";
+        brandFilter = "";
+        modelFilter = "";
+        engineNumberFilter = "";
+        entryDateFilter = "";
+        purchaseDateFilter = "";
     }
 
     public String getActiveSortOrder(){
@@ -421,7 +427,7 @@ public class InventoryApp{
                     startFilter();
                     break;
                 case "5":
-                    System.out.println("5!");
+                    viewCriteria.clear();
                     break;
                 default:
                     System.out.println("\nInvalid option, please enter only numbers 0-5");
