@@ -66,6 +66,12 @@ class InventorySystem{
         csvParser.saveStocks(stockMap);
     }
 
+    public void deleteStock(int stockId){
+        Stock s = stockMap.get(stockId);
+        stockMap.remove(stockId);
+        csvParser.saveStocks(stockMap);
+    }
+
 
     public ArrayList<Stock> filterStockOptions(ViewCriteria vc){
         ArrayList<Stock> stockArray = new ArrayList<>();
@@ -404,10 +410,9 @@ public class InventoryApp{
                     return;
                 case "1":
                     startUpdate(inventoryView);
-                    
                     break;
                 case "2":
-                    System.out.println("2!");
+                    startDelete(inventoryView);
                     break;
                 case "3":
                     startSort();
@@ -428,13 +433,40 @@ public class InventoryApp{
         
     }
 
+    public void startDelete(ArrayList<Stock> inventoryView){
+        String stockChoice = "";
+        while(true){
+            System.out.println("\n=======================");
+            System.out.println("INVENTORY VIEW");
+            System.out.println("=======================");
+            printInventoryView(inventoryView);
+            System.out.println("\n=======================");
+            System.out.print("Enter ID of stock to delete (Press 0 to Go Back): ");
+            stockChoice = sc.nextLine();
+
+            if (stockChoice.equals("0")) return;
+
+            if (isStockInView(stockChoice,inventoryView)){
+                break;
+            }
+
+            System.out.println("Invalid input. Please enter a valid stock ID that is currently in view.");
+        }
+
+        inventorySystem.deleteStock(Integer.parseInt(stockChoice));
+        System.out.println("Successfully deleted stock from system.");
+        sc.nextLine();
+    }
+
     public void startUpdate(ArrayList<Stock> inventoryView){
         String stockChoice = "";
         String fieldChoice = "";
         while(true){
             System.out.println("\n=======================");
+            System.out.println("INVENTORY VIEW");
+            System.out.println("=======================");
             printInventoryView(inventoryView);
-            System.out.println("\n=======================");
+            System.out.println("=======================");
             System.out.print("Enter ID of stock to update (Press 0 to Go Back): ");
             stockChoice = sc.nextLine();
 
@@ -443,6 +475,8 @@ public class InventoryApp{
             if (isStockInView(stockChoice,inventoryView)){
                 break;
             }
+
+            System.out.println("Invalid input. Please enter a valid stock ID that is currently in view.");
         }
 
         int stockId = Integer.parseInt(stockChoice);
