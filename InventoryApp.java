@@ -5,6 +5,112 @@ import java.time.format.DateTimeParseException;
 
 
 
+//holds filters
+class ViewCriteria {
+    private String sortOrder = "Entry Date";
+    private String sortDirection = "Ascending";
+    private String brandFilter = "";
+    private String modelFilter = "";
+    private String engineNumberFilter = "";
+    private String entryDateFilter = "";
+    private String purchaseDateFilter = "";
+
+    //filter checks
+    public boolean matches(Stock s) {
+        boolean brandMatch = brandFilter.isEmpty() || s.getProduct().getBrand().toLowerCase().contains(brandFilter.toLowerCase());
+        boolean modelMatch = modelFilter.isEmpty() || s.getProduct().getModel().toLowerCase().contains(modelFilter.toLowerCase());
+        boolean engineMatch = engineNumberFilter.isEmpty() || s.getEngineNumber().toUpperCase().contains(engineNumberFilter.toUpperCase());
+
+        boolean entryDateMatch = entryDateFilter.isEmpty() || s.getEntryDate().toString().startsWith(entryDateFilter);
+        boolean purchaseDateMatch = purchaseDateFilter.isEmpty() || s.getPurchaseDate().toString().startsWith(purchaseDateFilter);
+
+        return brandMatch && modelMatch && engineMatch && entryDateMatch && purchaseDateMatch;
+    }
+
+    public void reset() {
+        sortOrder = "Entry Date";
+        sortDirection = "Ascending";
+        brandFilter = "";
+        modelFilter = "";
+        engineNumberFilter = "";
+        entryDateFilter = "";
+        purchaseDateFilter = "";
+    }
+
+    public String getActiveSortOrder(){
+        return sortOrder + ", " + sortDirection;
+    }
+
+    public String getStrActiveFilters(){
+        List<String> activeList = new ArrayList<>();
+
+        if (!brandFilter.isEmpty()) activeList.add("Brand = " + brandFilter);
+        if (!modelFilter.isEmpty()) activeList.add("Model = " + modelFilter);
+        if (!engineNumberFilter.isEmpty()) activeList.add("Engine Number = " + engineNumberFilter);
+        if (!entryDateFilter.isEmpty()) activeList.add("EntryDate = " + entryDateFilter);
+        if (!purchaseDateFilter.isEmpty()) activeList.add("PurchaseDate = " + purchaseDateFilter);
+
+        if (activeList.isEmpty()) {
+            return "None";
+        } else {
+           return (String.join(", ", activeList));
+        }
+    }
+
+    public String allFilters(){
+        String b = brandFilter.isEmpty() ? "None" : brandFilter;
+        String m = modelFilter.isEmpty() ? "None" : modelFilter;
+        String en = engineNumberFilter.isEmpty() ? "None" : engineNumberFilter;
+        String e = entryDateFilter.isEmpty() ? "None" : entryDateFilter;
+        String p = purchaseDateFilter.isEmpty() ? "None" : purchaseDateFilter;
+
+        return String.format("Brand = %s, Model = %s, Engine Number = %s, Entry Date = %s, Purchase Date = %s", b, m, en, e, p);
+    }
+
+    public void setSortOrder(String newSortOrder){
+        sortOrder = newSortOrder;
+    }
+    
+    public void setSortDirection(String newSortDirection){
+        sortDirection = newSortDirection;
+    }
+    
+    public String getSortOrder(){
+        return sortOrder;
+    }
+    
+    public String getSortDirection(){
+        return sortDirection;
+    }
+    
+    public void setBrandFilter(String newBrandFilter){
+        brandFilter = newBrandFilter;
+    }
+
+    public void setModelFilter(String newModelFilter){
+        modelFilter = newModelFilter;
+    }
+    
+    public void setEngineNumberFilter(String newEngineNumberFilter){
+        engineNumberFilter = newEngineNumberFilter;
+    }
+
+    public void setEntryDateFilter(String newEntryDateFilter){
+        entryDateFilter = newEntryDateFilter;
+    }
+    
+    public void setPurchaseDateFilter(String newPurchaseDateFilter){
+        purchaseDateFilter = newPurchaseDateFilter;
+    }
+
+
+}
+
+
+
+
+
+//bridges InventoryApp to csvParser
 class InventorySystem{
     private HashMap<Integer, Product> productMap;
     private HashMap<Integer, Stock> stockMap;
@@ -165,7 +271,7 @@ class InventorySystem{
                 break;
         }
 
-        //if sort direction is descending, multiply by -1 to flip result
+        //if sort direction is descending, reverse sign of result to flip
         if (vc.getSortDirection().equalsIgnoreCase("Descending")) {
             result *= -1;
         }
@@ -213,106 +319,7 @@ class InventorySystem{
 }
 
 
-//holds filters
-class ViewCriteria {
-    private String sortOrder = "Entry Date";
-    private String sortDirection = "Ascending";
-    private String brandFilter = "";
-    private String modelFilter = "";
-    private String engineNumberFilter = "";
-    private String entryDateFilter = "";
-    private String purchaseDateFilter = "";
 
-    //filter checks
-    public boolean matches(Stock s) {
-        boolean brandMatch = brandFilter.isEmpty() || s.getProduct().getBrand().toLowerCase().contains(brandFilter.toLowerCase());
-        boolean modelMatch = modelFilter.isEmpty() || s.getProduct().getModel().toLowerCase().contains(modelFilter.toLowerCase());
-        boolean engineMatch = engineNumberFilter.isEmpty() || s.getEngineNumber().toUpperCase().contains(engineNumberFilter.toUpperCase());
-
-        boolean entryDateMatch = entryDateFilter.isEmpty() || s.getEntryDate().toString().startsWith(entryDateFilter);
-        boolean purchaseDateMatch = purchaseDateFilter.isEmpty() || s.getPurchaseDate().toString().startsWith(purchaseDateFilter);
-
-        return brandMatch && modelMatch && engineMatch && entryDateMatch && purchaseDateMatch;
-    }
-
-    public void reset() {
-        sortOrder = "Entry Date";
-        sortDirection = "Ascending";
-        brandFilter = "";
-        modelFilter = "";
-        engineNumberFilter = "";
-        entryDateFilter = "";
-        purchaseDateFilter = "";
-    }
-
-    public String getActiveSortOrder(){
-        return sortOrder + ", " + sortDirection;
-    }
-
-    public String getStrActiveFilters(){
-        List<String> activeList = new ArrayList<>();
-
-        if (!brandFilter.isEmpty()) activeList.add("Brand = " + brandFilter);
-        if (!modelFilter.isEmpty()) activeList.add("Model = " + modelFilter);
-        if (!engineNumberFilter.isEmpty()) activeList.add("Engine Number = " + engineNumberFilter);
-        if (!entryDateFilter.isEmpty()) activeList.add("EntryDate = " + entryDateFilter);
-        if (!purchaseDateFilter.isEmpty()) activeList.add("PurchaseDate = " + purchaseDateFilter);
-
-        if (activeList.isEmpty()) {
-            return "None";
-        } else {
-           return (String.join(", ", activeList));
-        }
-    }
-
-    public String allFilters(){
-        String b = brandFilter.isEmpty() ? "None" : brandFilter;
-        String m = modelFilter.isEmpty() ? "None" : modelFilter;
-        String en = engineNumberFilter.isEmpty() ? "None" : engineNumberFilter;
-        String e = entryDateFilter.isEmpty() ? "None" : entryDateFilter;
-        String p = purchaseDateFilter.isEmpty() ? "None" : purchaseDateFilter;
-
-        return String.format("Brand = %s, Model = %s, Engine Number = %s, Entry Date = %s, Purchase Date = %s", b, m, en, e, p);
-    }
-
-    public void setSortOrder(String newSortOrder){
-        sortOrder = newSortOrder;
-    }
-    
-    public void setSortDirection(String newSortDirection){
-        sortDirection = newSortDirection;
-    }
-    
-    public String getSortOrder(){
-        return sortOrder;
-    }
-    
-    public String getSortDirection(){
-        return sortDirection;
-    }
-    
-    public void setBrandFilter(String newBrandFilter){
-        brandFilter = newBrandFilter;
-    }
-
-    public void setModelFilter(String newModelFilter){
-        modelFilter = newModelFilter;
-    }
-    
-    public void setEngineNumberFilter(String newEngineNumberFilter){
-        engineNumberFilter = newEngineNumberFilter;
-    }
-
-    public void setEntryDateFilter(String newEntryDateFilter){
-        entryDateFilter = newEntryDateFilter;
-    }
-    
-    public void setPurchaseDateFilter(String newPurchaseDateFilter){
-        purchaseDateFilter = newPurchaseDateFilter;
-    }
-
-
-}
 
 
 
@@ -1147,6 +1154,8 @@ public class InventoryApp{
         }
         return false;
     }
+
+
 
 
     /*
