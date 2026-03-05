@@ -235,7 +235,7 @@ class ViewCriteria {
         return brandMatch && modelMatch && engineMatch && entryDateMatch && purchaseDateMatch;
     }
 
-    public void clear() {
+    public void reset() {
         sortOrder = "Entry Date";
         sortDirection = "Ascending";
         brandFilter = "";
@@ -317,7 +317,7 @@ class ViewCriteria {
 
 
 
-//handles prompting and printing to the user
+//handles all prompting and printing to the user
 public class InventoryApp{
     private InventorySystem inventorySystem = new InventorySystem();
     private ViewCriteria viewCriteria = new ViewCriteria();
@@ -374,6 +374,14 @@ public class InventoryApp{
         }while(exitApp==false);
     }
 
+
+
+
+    /*
+    
+    PROMPT METHODS
+
+     */
 
     public void promptAddStocks(){
         String productInput;
@@ -441,6 +449,7 @@ public class InventoryApp{
 
     }
 
+
     public void promptViewInventory(){
         
         String viewChoice="";
@@ -451,7 +460,7 @@ public class InventoryApp{
             System.out.println("INVENTORY VIEW");
             System.out.println("=======================");
             inventoryView = inventorySystem.filterStockOptions(viewCriteria); //get all stocks that pass filters
-            printInventoryView(inventoryView);
+            printInventoryView(inventoryView); //has the mergeSort method
             System.out.println("=======================");
             System.out.printf("Currently viewing %d stocks out of %d", inventoryView.size(),inventorySystem.getHmStocks().size());
             System.out.println("\nActive Filters: " + viewCriteria.getStrActiveFilters()); //print active filters to let user know
@@ -479,7 +488,7 @@ public class InventoryApp{
                     promptFilter();
                     break;
                 case "5":
-                    viewCriteria.clear();
+                    viewCriteria.reset();
                     break;
                 default:
                     System.out.println("\nInvalid option, please enter only numbers 0-5");
@@ -491,13 +500,14 @@ public class InventoryApp{
         
     }
 
+
     public void promptDelete(ArrayList<Stock> inventoryView){
         String stockChoice = "";
         while(true){
             System.out.println("\n=======================");
             System.out.println("INVENTORY VIEW");
             System.out.println("=======================");
-            printInventoryView(inventoryView);
+            printInventoryView(inventoryView); //print stock options to delete
             System.out.println("\n=======================");
             System.out.print("Enter ID of stock to delete (Press 0 to Go Back): ");
             stockChoice = sc.nextLine();
@@ -515,6 +525,7 @@ public class InventoryApp{
         System.out.println("Successfully deleted stock from system.");
         sc.nextLine();
     }
+
 
     public void promptUpdate(ArrayList<Stock> inventoryView){
         String stockChoice = "";
@@ -608,21 +619,6 @@ public class InventoryApp{
         }
     }
 
-    
-
-    public void printInventoryView(List<Stock> inventoryView){
-        List<Stock> sortedInventoryView = new ArrayList<>();
-        if (inventoryView.size()>0){
-            System.out.println("Stock ID | Brand | Model | Engine Number | Entry Date/Time | Purchase Date/Time");
-            sortedInventoryView = inventorySystem.mergeSort(inventoryView, viewCriteria);
-            //if there is at least one or more stock/s that passes all filters, print all
-            for (Stock s : sortedInventoryView){
-                System.out.println(s.toMenuOption());
-            }
-        } else{
-            System.out.println("No stock records found."); //if none, inform user
-        }
-    }
 
     public void promptSort(){
         String sortChoice = "";
@@ -640,10 +636,10 @@ public class InventoryApp{
                 case "0":
                     return;
                 case "1":
-                    startSortBy();
+                    promptSortBy();
                     break;
                 case "2":
-                    startSortDirection();
+                    promptSortDirection();
                     break;
                 default:
                     System.out.println("Invalid input. Please enter only numbers 0-2.");
@@ -654,7 +650,8 @@ public class InventoryApp{
 
     }
 
-    public void startSortBy(){
+
+    public void promptSortBy(){
         String sortByChoice = "";
         while (true){
             System.out.println("\n=======================");
@@ -688,7 +685,8 @@ public class InventoryApp{
 
     }
 
-    public void startSortDirection(){
+
+    public void promptSortDirection(){
         String sortDirectionChoice = "";
 
         while (true){
@@ -717,6 +715,7 @@ public class InventoryApp{
             }
         }
     }
+
 
     public void promptFilter(){
         String viewChoice = "";
@@ -785,6 +784,7 @@ public class InventoryApp{
         viewCriteria.setBrandFilter(menuMap.get(Integer.parseInt(brandInput)));
     }
 
+
     public void promptModelFilter(){
         String modelInput = "";
         do{
@@ -816,6 +816,7 @@ public class InventoryApp{
         viewCriteria.setModelFilter(model.getModel());
     }
 
+
     public void promptEngineNumberFilter(){
         String engineNumberInput = "";
                         
@@ -835,6 +836,7 @@ public class InventoryApp{
         viewCriteria.setEngineNumberFilter(engineNumberInput);
     }
 
+
     public void promptEntryDateFilter(){
         String entryDateInput = "";
         do{
@@ -852,6 +854,7 @@ public class InventoryApp{
         viewCriteria.setEntryDateFilter(entryDateInput);
     }
     
+
     public void promptPurchaseDateFilter(){
         String purchaseDateInput = "";
 
@@ -870,6 +873,7 @@ public class InventoryApp{
 
         viewCriteria.setPurchaseDateFilter(purchaseDateInput);
     }
+
 
     public void promptConfigureProductTypes(){
         String configureChoice ="";
@@ -905,6 +909,7 @@ public class InventoryApp{
         }    
 
     }
+
 
     public void promptAddProduct(){
         String brandInput = "";
@@ -949,6 +954,7 @@ public class InventoryApp{
         System.out.println("\nSuccessfully added product type.");
     
     }
+
 
     public void promptEditProduct(){
         String productChoice = "";
@@ -999,6 +1005,7 @@ public class InventoryApp{
         }
     }
 
+
     public void promptEditProductBrand(Product product){
         String brandInput = "";
 
@@ -1036,6 +1043,7 @@ public class InventoryApp{
         System.out.println("Successfully updated product brand.");
         sc.nextLine();
     }
+
 
     public void promptEditProductModel(Product product){
         String newModel = "";
@@ -1085,6 +1093,14 @@ public class InventoryApp{
         sc.nextLine();
     }
 
+
+
+
+    /*
+    
+    VALIDATION HELPER METHODS
+
+     */
     public boolean hasStock(int productId){
         for (Stock s : inventorySystem.getHmStocks().values()){
             if (productId == s.getProduct().getProductId()) return true;
@@ -1132,6 +1148,28 @@ public class InventoryApp{
         return false;
     }
 
+
+    /*
+    
+    PRINTING METHODS
+
+     */
+
+    public void printInventoryView(List<Stock> inventoryView){
+        List<Stock> sortedInventoryView = new ArrayList<>();
+        if (inventoryView.size()>0){
+            System.out.println("Stock ID | Brand | Model | Engine Number | Entry Date/Time | Purchase Date/Time");
+            sortedInventoryView = inventorySystem.mergeSort(inventoryView, viewCriteria);
+            //if there is at least one or more stock/s that passes all filters, print all
+            for (Stock s : sortedInventoryView){
+                System.out.println(s.toMenuOption());
+            }
+        } else{
+            System.out.println("No stock records found."); //if none, inform user
+        }
+    }
+
+
     public void printProductsOptions(){
         System.out.println("Product ID | Brand | Model");
         for (Product p : inventorySystem.getObjProducts()){
@@ -1139,12 +1177,14 @@ public class InventoryApp{
         }
     }
     
+
     public void printStocksOptions(){
         System.out.println("Stock ID | Brand | Model | Engine Number | Entry Date | Purchase Date");
         for (Stock s : inventorySystem.getObjStocks()){
             System.out.println(s.toMenuOption());
         }
     }
+
 
     public void printBrandsOptions(HashMap<Integer, String> menuMap){
         System.out.println("Brand Index | Brand Name");
@@ -1154,7 +1194,7 @@ public class InventoryApp{
     }
 
 
-
+    //main method
     public static void main(String[] args) {
         InventoryApp app = new InventoryApp();
         app.start();
