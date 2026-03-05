@@ -18,11 +18,23 @@ public class Product {
         return productId + " | " + brand + " | " + model;
     }
 
+    public int getProductId(){
+        return productId;
+    }
+   
     public String getBrand(){
         return brand;
     }
 
     public String getModel(){
         return model;
+    }
+
+    public void setBrand(String newBrand){
+        brand = newBrand;
+    }
+    
+    public void setModel(String newModel){
+        model = newModel;
     }
 }

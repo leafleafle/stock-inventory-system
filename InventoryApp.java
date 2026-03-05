@@ -25,6 +25,10 @@ class InventorySystem{
     public int generateStockId() {
         return nextStockId++; 
     }
+    
+    public int generateProductId() {
+        return nextProductId++; 
+    }
 
     public void addStocks(int productId, String[] engineNumbers){
         Product product = productMap.get(productId); //hashmap for O(1) lookup of product
@@ -43,33 +47,55 @@ class InventorySystem{
         System.out.println("Successfully added " + engineNumbers.length + " stock/s to the system.");
     }
 
-    public void updateStockProduct(int stockId, int newProductId){
-        Stock s = stockMap.get(stockId);
+    public void updateStockProduct(Stock stock, int newProductId){
         Product p = productMap.get(newProductId);
         
-        s.setProduct(p);
+        stock.setProduct(p);
         csvParser.saveStocks(stockMap);
     }
 
-    public void updateStockEngineNumber(int stockId, String newEngineNumber){
-        Stock s = stockMap.get(stockId);
-
-        s.setEngineNumber(newEngineNumber);
+    public void updateStockEngineNumber(Stock stock, String newEngineNumber){
+        stock.setEngineNumber(newEngineNumber);
         csvParser.saveStocks(stockMap);
     }
     
-    public void updateStockPurchaseDateTime(int stockId){
-        Stock s = stockMap.get(stockId);
+    public void updateStockPurchaseDateTime(Stock stock){
         LocalDateTime newPurchaseDateTime = LocalDateTime.now();
 
-        s.setPurchaseDateTime(newPurchaseDateTime);
+        stock.setPurchaseDateTime(newPurchaseDateTime);
         csvParser.saveStocks(stockMap);
     }
 
     public void deleteStock(int stockId){
-        Stock s = stockMap.get(stockId);
         stockMap.remove(stockId);
         csvParser.saveStocks(stockMap);
+    }
+
+    public void addProductType(String brand, String newProductName){
+        int newProductId = generateProductId();
+
+        Product newProduct = new Product(newProductId, brand, newProductName);
+        productMap.put(newProductId,newProduct);
+
+        csvParser.saveProducts(productMap);
+        csvParser.saveConfig(nextProductId, nextStockId);
+    }
+
+    public void updateProductBrand(Product product, String newBrand){
+        product.setBrand(newBrand);
+
+        csvParser.saveProducts(productMap);
+    }
+    
+    public void updateProductModel(Product product, String newModel){
+        product.setModel(newModel);
+
+        csvParser.saveProducts(productMap);
+    }
+
+    public void deleteProductType(int productId){
+        productMap.remove(productId);
+        csvParser.saveProducts(productMap);
     }
 
 
@@ -147,6 +173,24 @@ class InventorySystem{
         return result;
     }
 
+    public HashMap<Integer, String> getHmBrands(){
+        // get unique brands
+        Set<String> uniqueBrands = new TreeSet<>();
+        for (Product p : productMap.values()) {
+            uniqueBrands.add(p.getBrand());
+        }
+
+        // hashmap for easier mapping of the index the user will enter and the actual brand value to be stored in sortFilter in viewCriteria
+        // also for easier validation using isValidOpt method
+        HashMap<Integer, String> menuMap = new HashMap<>();
+        int index = 1;
+        for (String brand : uniqueBrands) {
+            menuMap.put(index++, brand);
+        }
+
+        return menuMap;
+    }
+
     public HashMap<Integer, Product> getHmProducts(){
         return productMap;
     }
@@ -172,7 +216,7 @@ class InventorySystem{
 //holds filters
 class ViewCriteria {
     private String sortOrder = "Entry Date";
-    private String sortDirection = "Descending";
+    private String sortDirection = "Ascending";
     private String brandFilter = "";
     private String modelFilter = "";
     private String engineNumberFilter = "";
@@ -193,7 +237,7 @@ class ViewCriteria {
 
     public void clear() {
         sortOrder = "Entry Date";
-        sortDirection = "Descending";
+        sortDirection = "Ascending";
         brandFilter = "";
         modelFilter = "";
         engineNumberFilter = "";
@@ -271,6 +315,9 @@ class ViewCriteria {
 }
 
 
+
+
+//handles prompting and printing to the user
 public class InventoryApp{
     private InventorySystem inventorySystem = new InventorySystem();
     private ViewCriteria viewCriteria = new ViewCriteria();
@@ -297,15 +344,20 @@ public class InventoryApp{
             System.out.println("0 - Exit Program");
             System.out.println("=======================");
             System.out.print("Enter choice: ");
-            mainChoice = askChoice();
+            mainChoice = sc.nextLine();
             switch (mainChoice){
                 case "1":
-                    startAddStocks();
+                    promptAddStocks();
                     System.out.println("Press enter to go back to main menu.");
                     sc.nextLine();
                     break;
                 case "2":
-                    startViewInventory();
+                    promptViewInventory();
+                    System.out.println("Press enter to go back to main menu.");
+                    sc.nextLine();
+                    break;
+                case "3":
+                    promptConfigureProductTypes();
                     System.out.println("Press enter to go back to main menu.");
                     sc.nextLine();
                     break;
@@ -315,7 +367,7 @@ public class InventoryApp{
                     sc.close();
                     break;
                 default:
-                    System.out.println("\nInvalid option, please enter only numbers 0-7");
+                    System.out.println("\nInvalid option, please enter only numbers 0-3");
                     sc.nextLine();
                     break;
             }
@@ -323,7 +375,7 @@ public class InventoryApp{
     }
 
 
-    public void startAddStocks(){
+    public void promptAddStocks(){
         String productInput;
 
         //print product type options, prompt user for input, then validate input
@@ -389,7 +441,7 @@ public class InventoryApp{
 
     }
 
-    public void startViewInventory(){
+    public void promptViewInventory(){
         
         String viewChoice="";
         ArrayList<Stock> inventoryView;
@@ -409,22 +461,22 @@ public class InventoryApp{
             System.out.println("1 - Update | 2 - Delete | 3 - Sort | 4 - Search/Filter | 5 - Reset View | 0 - Go Back");
             System.out.println("=======================");
             System.out.print("Enter choice: ");
-            viewChoice = askChoice();
+            viewChoice = sc.nextLine();
 
             switch (viewChoice){
                 case "0":
                     return;
                 case "1":
-                    startUpdate(inventoryView);
+                    promptUpdate(inventoryView);
                     break;
                 case "2":
-                    startDelete(inventoryView);
+                    promptDelete(inventoryView);
                     break;
                 case "3":
-                    startSort();
+                    promptSort();
                     break;
                 case "4":
-                    startFilter();
+                    promptFilter();
                     break;
                 case "5":
                     viewCriteria.clear();
@@ -439,7 +491,7 @@ public class InventoryApp{
         
     }
 
-    public void startDelete(ArrayList<Stock> inventoryView){
+    public void promptDelete(ArrayList<Stock> inventoryView){
         String stockChoice = "";
         while(true){
             System.out.println("\n=======================");
@@ -464,14 +516,14 @@ public class InventoryApp{
         sc.nextLine();
     }
 
-    public void startUpdate(ArrayList<Stock> inventoryView){
+    public void promptUpdate(ArrayList<Stock> inventoryView){
         String stockChoice = "";
         String fieldChoice = "";
         while(true){
             System.out.println("\n=======================");
             System.out.println("INVENTORY VIEW");
             System.out.println("=======================");
-            printInventoryView(inventoryView);
+            printInventoryView(inventoryView); //print stock options to update
             System.out.println("=======================");
             System.out.print("Enter ID of stock to update (Press 0 to Go Back): ");
             stockChoice = sc.nextLine();
@@ -486,7 +538,7 @@ public class InventoryApp{
         }
 
         int stockId = Integer.parseInt(stockChoice);
-        Stock s = inventorySystem.getHmStocks().get(stockId);
+        Stock s = inventorySystem.getHmStocks().get(stockId); // O(1) lookup using hashmap
 
         boolean updating = true;
         while(updating){
@@ -494,8 +546,8 @@ public class InventoryApp{
             System.out.println("UPDATING STOCK: " + s.toMenuOption());
             System.out.println("=======================");
             System.out.println("1 - Brand and Model | 2 - Engine Number | 3 - Purchase Date | 0 - Go Back");
-            System.out.println("Enter data field to update: ");
-            fieldChoice = askChoice();
+            System.out.print("Enter data field to update: ");
+            fieldChoice = sc.nextLine();
 
             switch (fieldChoice){
                 case "0":
@@ -507,10 +559,10 @@ public class InventoryApp{
                         System.out.println("=======================");
                         printProductsOptions();
                         System.out.println("=======================");
-                        System.out.println("Enter new product type ID of stock: ");
+                        System.out.print("Enter new product type ID of stock: ");
                     } while(isValidOpt(newProductId, inventorySystem.getHmProducts()));
 
-                    inventorySystem.updateStockProduct(stockId, Integer.parseInt(newProductId));
+                    inventorySystem.updateStockProduct(s, Integer.parseInt(newProductId));
                     System.out.println("Successfully updated stock.");
                     sc.nextLine();
                     break;
@@ -518,10 +570,10 @@ public class InventoryApp{
                     String newEngineNumber = "";
                     
                     System.out.println("=======================");
-                    System.out.println("Enter new engine number: ");
-                    newEngineNumber = askChoice();
+                    System.out.print("Enter new engine number: ");
+                    newEngineNumber = sc.nextLine();
 
-                    inventorySystem.updateStockEngineNumber(stockId, newEngineNumber);
+                    inventorySystem.updateStockEngineNumber(s, newEngineNumber);
                     System.out.println("Successfully updated stock.");
                     sc.nextLine();
                     break;
@@ -535,16 +587,16 @@ public class InventoryApp{
                     
                     System.out.println("=======================");
                     System.out.println("Purchase date will be set to current time.");
-                    System.out.println("Enter confirmation that stock has been purchased (Y/N): ");
-                    isPurchased = askChoice();
+                    System.out.print("Enter confirmation that stock has been purchased (Y/N): ");
+                    isPurchased = sc.nextLine();
 
-                    if (isPurchased.toLowerCase().equals("N")){
+                    if (isPurchased.equalsIgnoreCase("N")){
                         System.out.println("Cancelled updating of purchase date.");
                         sc.nextLine();
                         return;
                     }
 
-                    inventorySystem.updateStockPurchaseDateTime(stockId);
+                    inventorySystem.updateStockPurchaseDateTime(s);
                     System.out.println("Successfully updated stock.");
                     sc.nextLine();
                     break;
@@ -572,7 +624,7 @@ public class InventoryApp{
         }
     }
 
-    public void startSort(){
+    public void promptSort(){
         String sortChoice = "";
 
         while(true){
@@ -582,7 +634,7 @@ public class InventoryApp{
             System.out.println("1 - Edit Sort By | 2 - Edit Sort Direction | 0 - Go Back");
             System.out.println("=======================");
             System.out.print("Enter choice: ");
-            sortChoice = askChoice();
+            sortChoice = sc.nextLine();
 
             switch (sortChoice){
                 case "0":
@@ -613,7 +665,7 @@ public class InventoryApp{
             System.out.println("0 - Go Back");
             System.out.println("=======================");
             System.out.print("Enter choice: ");
-            sortByChoice = askChoice();
+            sortByChoice = sc.nextLine();
 
             switch (sortByChoice) {
                 case "0":
@@ -647,7 +699,7 @@ public class InventoryApp{
             System.out.println("0 - Go Back");
             System.out.println("=======================");
             System.out.print("Enter choice: ");
-            sortDirectionChoice = askChoice();
+            sortDirectionChoice = sc.nextLine();
 
             switch (sortDirectionChoice) {
                 case "0":
@@ -666,7 +718,7 @@ public class InventoryApp{
         }
     }
 
-    public void startFilter(){
+    public void promptFilter(){
         String viewChoice = "";
         while(true){
             System.out.println("\n=======================");
@@ -677,25 +729,25 @@ public class InventoryApp{
             System.out.println("1 - Brand | 2 - Model | 3 - Engine Number | 4 - Entry Date | 5 - Purchase Date | 0 - Go Back");
             System.out.println("=======================");
             System.out.print("Enter choice: ");
-            viewChoice = askChoice();
+            viewChoice = sc.nextLine();
 
             switch (viewChoice){
                 case "0":
                     return;
                 case "1":
-                    startBrandFilter();
+                    promptBrandFilter();
                     break;
                 case "2":
-                    startModelFilter();
+                    promptModelFilter();
                     break;
                 case "3":
-                    startEngineNumberFilter();
+                    promptEngineNumberFilter();
                     break;
                 case "4":
-                    startEntryDateFilter();
+                    promptEntryDateFilter();
                     break;
                 case "5":
-                    startPurchaseDateFilter();
+                    promptPurchaseDateFilter();
                     break;
                 default:
                     System.out.println("Invalid input. Please enter only numbers 0-5.");
@@ -706,33 +758,20 @@ public class InventoryApp{
     }
 
 
-    public void startBrandFilter(){
+    public void promptBrandFilter(){
         String brandInput = "";
+        
         // get unique brands
-        Set<String> uniqueBrands = new TreeSet<>();
-        for (Stock s : inventorySystem.getObjStocks()) {
-            uniqueBrands.add(s.getProduct().getBrand());
-        }
-
-        // hashmap for easier mapping of the index the user will enter and the actual brand value to be stored in sortFilter in viewCriteria
-        // also for easier validation using isValidOpt method
-        HashMap<Integer, String> menuMap = new HashMap<>();
-        int index = 1;
-        for (String brand : uniqueBrands) {
-            menuMap.put(index++, brand);
-        }
+        HashMap<Integer, String> menuMap = inventorySystem.getHmBrands();
 
         do{
             System.out.println("\n=======================");
-            System.out.println("Brand Index | Brand Name");
-            for (Map.Entry<Integer, String> entry : menuMap.entrySet()) {
-                System.out.println(entry.getKey() + " | " + entry.getValue());
-            }
+            printBrandsOptions(menuMap);
             System.out.println("0 | Go Back"); //option for back
             System.out.println("=======================");
             System.out.print("Enter brand index or press enter to remove filter: ");
 
-            brandInput = askChoice();
+            brandInput = sc.nextLine();
 
             if (brandInput.equals("0")) return;
             
@@ -746,7 +785,7 @@ public class InventoryApp{
         viewCriteria.setBrandFilter(menuMap.get(Integer.parseInt(brandInput)));
     }
 
-    public void startModelFilter(){
+    public void promptModelFilter(){
         String modelInput = "";
         do{
             
@@ -777,12 +816,12 @@ public class InventoryApp{
         viewCriteria.setModelFilter(model.getModel());
     }
 
-    public void startEngineNumberFilter(){
+    public void promptEngineNumberFilter(){
         String engineNumberInput = "";
                         
         System.out.println("\n=======================");
         System.out.println("Any other filters will be overriden.");
-        System.out.println("Enter engine number to search or press enter to remove filter: ");
+        System.out.print("Enter engine number to search or press enter to remove filter: ");
         engineNumberInput = sc.nextLine();
 
         //override other filters since engine numbers are more specific, for easier searching of specific engine numbers
@@ -796,11 +835,9 @@ public class InventoryApp{
         viewCriteria.setEngineNumberFilter(engineNumberInput);
     }
 
-    public void startEntryDateFilter(){
+    public void promptEntryDateFilter(){
         String entryDateInput = "";
-
         do{
-            
             System.out.println("\n=======================");
             System.out.print("Enter entry date (YYYY-MM or YYYY-MM-DD) or press enter to remove filter: ");
             
@@ -815,7 +852,7 @@ public class InventoryApp{
         viewCriteria.setEntryDateFilter(entryDateInput);
     }
     
-    public void startPurchaseDateFilter(){
+    public void promptPurchaseDateFilter(){
         String purchaseDateInput = "";
 
         do{
@@ -832,6 +869,228 @@ public class InventoryApp{
         } while (!(isValidDate(purchaseDateInput) || purchaseDateInput.equals("")));
 
         viewCriteria.setPurchaseDateFilter(purchaseDateInput);
+    }
+
+    public void promptConfigureProductTypes(){
+        String configureChoice ="";
+        while(true){
+            System.out.println("\n=======================");
+            System.out.println("PRODUCT TYPES VIEW");
+            System.out.println("=======================");
+            printProductsOptions();
+            System.out.println("=======================");
+            System.out.println("CONFIGURE OPTIONS:");
+            System.out.println("1 - Add Product Type | 2 - Edit Product Type | 3 - Delete Product Type | 0 - Go Back");
+            System.out.println("=======================");
+            System.out.print("Enter choice: ");
+            configureChoice = sc.nextLine();
+
+            switch (configureChoice){
+                case "0":
+                    return;
+                case "1":
+                    promptAddProduct();
+                    break;
+                case "2":
+                    promptEditProduct();
+                    break;
+                case "3":
+                    promptDeleteProduct();
+                    break;
+                default:
+                    System.out.println("Invalid input please enter only numbers 0-3.");
+                    sc.nextLine();
+                    break;
+            }
+        }    
+
+    }
+
+    public void promptAddProduct(){
+        String brandInput = "";
+
+        // get unique brands
+        HashMap<Integer, String> menuMap = inventorySystem.getHmBrands();
+        do{
+            System.out.println("\n=======================");
+            printBrandsOptions(menuMap);
+            System.out.println("N | Enter new brand");
+            System.out.println("0 | Go Back");
+            System.out.println("=======================");
+            System.out.print("Enter brand index, 0 to go back, or N for new brand: ");
+
+            brandInput = sc.nextLine();
+
+            if (brandInput.equals("0")) return;
+            
+
+            if (!(isValidOpt(brandInput, inventorySystem.getHmProducts()) || brandInput.equalsIgnoreCase("N"))){
+                System.out.println("Invalid input. Please enter valid brand index.");
+                sc.nextLine();
+            }
+
+        } while(!brandInput.equals("") && !isValidOpt(brandInput, menuMap) && !brandInput.equalsIgnoreCase("N"));
+    
+        String actualBrand = "";
+
+        if (brandInput.equalsIgnoreCase("N")){
+            System.out.print("Enter new brand: ");
+            actualBrand = sc.nextLine();
+        } else{
+            actualBrand = menuMap.get(Integer.parseInt(brandInput));
+        }
+
+        String newProductName = "";
+
+        System.out.print("Enter new name of product type: ");
+        newProductName = sc.nextLine();
+
+        inventorySystem.addProductType(actualBrand,newProductName);
+        System.out.println("\nSuccessfully added product type.");
+    
+    }
+
+    public void promptEditProduct(){
+        String productChoice = "";
+
+        do{
+            System.out.println("\n=======================");
+            printProductsOptions();
+            System.out.println("0 | Go Back");
+            System.out.println("=======================");
+            System.out.println("Which product type to edit?");
+            System.out.print("Enter ID of product type to edit: ");
+            productChoice = sc.nextLine();
+
+            if (productChoice.equals("0")) return;
+
+            if (!isValidOpt(productChoice, inventorySystem.getHmProducts())){
+                System.out.println("Invalid input. Please enter valid product IDs only or 0 to go back.");
+            }
+
+        } while(!(isValidOpt(productChoice, inventorySystem.getHmProducts()) || productChoice.equals("0")));
+    
+        String fieldChoice = "";
+        Product actualProduct = inventorySystem.getHmProducts().get(Integer.parseInt(productChoice));
+
+        while (true){
+            System.out.println("=======================");
+            System.out.println("Currently editing product type: " + actualProduct.toMenuOption());
+            System.out.println("=======================");
+            System.out.println("Which field to edit?");
+            System.out.println("1 - Brand | 2 - Model | 0 - Go Back");
+
+            fieldChoice = sc.nextLine();
+
+            switch (fieldChoice) {
+                case "0":
+                    return;
+                case "1":
+                    promptEditProductBrand(actualProduct);
+                    break;
+                case "2":
+                    promptEditProductModel(actualProduct);
+                    break;
+                default:
+                    System.out.println("Invalid input. Please enter only numbers 1 or 2");
+                    break;
+            }
+
+        }
+    }
+
+    public void promptEditProductBrand(Product product){
+        String brandInput = "";
+
+        HashMap<Integer, String> menuMap = inventorySystem.getHmBrands();
+        do{
+            System.out.println("\n=======================");
+            printBrandsOptions(menuMap);
+            System.out.println("N | Enter new brand");
+            System.out.println("0 | Go Back");
+            System.out.println("=======================");
+            System.out.print("Enter brand index, 0 to go back, or N for new brand: ");
+
+            brandInput = sc.nextLine();
+
+            if (brandInput.equals("0")) return;
+            
+
+            if (!(isValidOpt(brandInput, inventorySystem.getHmProducts()) || brandInput.equalsIgnoreCase("N"))){
+                System.out.println("Invalid input. Please enter valid brand index.");
+                sc.nextLine();
+            }
+
+        } while(!brandInput.equals("") && !isValidOpt(brandInput, menuMap) && !brandInput.equalsIgnoreCase("N"));
+
+        String actualBrand = "";
+
+        if (brandInput.equalsIgnoreCase("N")){
+            System.out.print("Enter new brand: ");
+            actualBrand = sc.nextLine();
+        } else{
+            actualBrand = menuMap.get(Integer.parseInt(brandInput));
+        }
+
+        inventorySystem.updateProductBrand(product, actualBrand);
+        System.out.println("Successfully updated product brand.");
+        sc.nextLine();
+    }
+
+    public void promptEditProductModel(Product product){
+        String newModel = "";
+        
+        System.out.println("\n=======================");
+        System.out.print("Enter new product model or 0 to go back: ");
+        newModel = sc.nextLine();
+
+        if (newModel.equals("0")) return;
+
+        inventorySystem.updateProductModel(product, newModel);
+        System.out.println("Successfully updated product model.");
+        sc.nextLine();
+    }
+
+    
+    public void promptDeleteProduct(){
+        String productChoice = "";
+
+        do{
+            System.out.println("\n=======================");
+            printProductsOptions();
+            System.out.println("0 | Go Back");
+            System.out.println("=======================");
+            System.out.println("Which product type to delete?");
+            System.out.print("Enter ID of product type to delete: ");
+            productChoice = sc.nextLine();
+
+            if (productChoice.equals("0")) return;
+
+            if (!isValidOpt(productChoice, inventorySystem.getHmProducts())){
+                System.out.println("Invalid input. Please enter valid product IDs only or 0 to go back.");
+            }
+
+        } while(!(isValidOpt(productChoice, inventorySystem.getHmProducts()) || productChoice.equals("0")));
+
+        
+        if (hasStock(Integer.parseInt(productChoice))){
+            System.out.println("Cannot delete product type since stocks with product type still exist. Please delete the stocks first.");
+            sc.nextLine();
+            return;
+        }
+        
+
+        inventorySystem.deleteProductType(Integer.parseInt(productChoice));
+        System.out.println("Successfully deleted product type from the system.");
+        sc.nextLine();
+    }
+
+    public boolean hasStock(int productId){
+        for (Stock s : inventorySystem.getHmStocks().values()){
+            if (productId == s.getProduct().getProductId()) return true;
+        }
+
+        return false;
     }
     
     public boolean isValidDate(String strDate) {
@@ -887,12 +1146,13 @@ public class InventoryApp{
         }
     }
 
-
-    public String askChoice(){
-        String mainChoice = sc.nextLine();
-
-        return mainChoice;
+    public void printBrandsOptions(HashMap<Integer, String> menuMap){
+        System.out.println("Brand Index | Brand Name");
+        for (Map.Entry<Integer, String> entry : menuMap.entrySet()) {
+            System.out.println(entry.getKey() + " | " + entry.getValue());
+        }
     }
+
 
 
     public static void main(String[] args) {
